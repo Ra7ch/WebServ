@@ -25,7 +25,7 @@
 using namespace std;
 
 const int MAX_CLIENTS = 5;
-const int BUFFER_SIZE = 1024;
+const int BUFFER_SIZE = 10;
 
 #include "Request.hpp"
 

@@ -13,12 +13,6 @@ int main(int argc, char **argv) {
     vector <int> serverSockets;
 
     int j = 0;
-    // int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    // if (serverSocket == -1) {
-    //     perror("Error creating socket");
-    //     return EXIT_FAILURE;
-    // }
-
 
     // Listening on all ports
     // create a socket for each port and add it to the epool or a vector and then listen on all of them
@@ -51,26 +45,6 @@ int main(int argc, char **argv) {
         std::cout << "Server is listening on port " << Ports[i] << "...\n";
     }
 
-    // sockaddr_in serverAddress;
-    // memset(&serverAddress, 0, sizeof(serverAddress));
-    // serverAddress.sin_family = AF_INET;
-    // serverAddress.sin_addr.s_addr = INADDR_ANY;
-    // serverAddress.sin_port = htons(8080);
-
-    // if (bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) == -1) {
-    //     perror("Error binding socket");
-    //     close(serverSocket);
-    //     return EXIT_FAILURE;
-    // }
-
-    // if (listen(serverSocket, MAX_CLIENTS) == -1) {
-    //     perror("Error listening on socket");
-    //     close(serverSocket);
-    //     return EXIT_FAILURE;
-    // }
-
-    //std::cout << "Server is listening on port 8080...\n";
-
     int epollFd = epoll_create1(0);
     if (epollFd == -1) {
         perror("Error creating epoll instance");
@@ -80,16 +54,6 @@ int main(int argc, char **argv) {
         //close(serverSocket);
         return EXIT_FAILURE;
     }
-
-    // struct epoll_event event;
-    // event.events = EPOLLIN;
-    // event.data.fd = serverSocket;
-    // if (epoll_ctl(epollFd, EPOLL_CTL_ADD, serverSocket, &event) == -1) {
-    //     perror("Error adding server socket to epoll instance");
-    //     close(serverSocket);
-    //     close(epollFd);
-    //     return EXIT_FAILURE;
-    // }
 
     // Create a vector to store epoll events for each server socket
     std::vector<struct epoll_event> serverEvents(serverSockets.size());
@@ -175,11 +139,17 @@ int main(int argc, char **argv) {
                             current->setHost(current->getRequest2()->getHost());
                             //cout << "*******************************" << endl;
                             //current->getRequest2()->printHeaders();
+                           // getchar();
+                            //cout << "*******************************" << endl << endl;
 
                             // Echo back to the client
                             //send(fd, current->getBuffer(), bytesRead, 0);
                         }
                         break;
+                    }
+                    if (current->getSocketDescriptor() == fd && (events[i].events & EPOLLOUT)) {
+                        //cout << "im here" << endl;
+                       // getchar();
                     }
                     current = current->getNext();
                 }

@@ -16,185 +16,6 @@ enum class RequestState {
     BODY
 };
 
-class Request {
-    int client;
-    char *method; // 4
-    char *path; // 1020
-    char *version; 
-    char *host;
-    char *connection;
-    char *cache_control;
-    char *user_agent;
-    char *accept;
-    char *accept_encoding;
-    char *accept_language;
-    char *body;
-    string type;
-    char *FullRequest;
-    map<string, string> headers;
-    ofstream RequestFile;
-    RequestState state = RequestState::HEADERS;
-    int level = 0;
-    char *key;
-    char *value;
-    char *filename;
-    // /n/r
-    public:
-        Request(char *FullRequest, int client): client(client) {
-            string file  = ".HttpRequest";
-            filename = ft_strjoin(const_cast<char *>(file.c_str()), const_cast<char *>(std::to_string(client).c_str()));
-            this->FullRequest = FullRequest;
-            RequestFile.open(filename, std::ios::out | std::ios::trunc);
-            if (!RequestFile.is_open()) {
-                std::cerr << "Error opening file for appending Request1\n";
-                exit (1);
-            }
-            state = RequestState::HEADERS;
-        }
-
-        void readFullRequest(char *buffer) {
-            if (state == RequestState::HEADERS) {
-                char* b = buffer;
-                RequestFile << b;
-                // if (chmod(".HttpBodyRequest", S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH | S_IWOTH | S_IWGRP) != 0) {
-                //     std::cerr << "Error changing file permissions." << std::endl;
-                //     exit (1);
-                // }
-                const char *endHeader1 = strstr(buffer, "\r\n\r\n");
-                if (endHeader1 != NULL) {
-                    parseHeadersRequest();
-                    state = RequestState::BODY;
-                }
-            }
-            else if (state == RequestState::BODY) {
-                std::istringstream ss(buffer);
-                string body;
-                string line;
-                auto transferEncodingIterator = headers.find("Transfer-Encoding");
-                if (transferEncodingIterator != headers.end() && transferEncodingIterator->second == "chunked") {
-                    // Read the chunked body
-                    while (std::getline(ss, line)) {
-                        if (line == "\r") {
-                            // skip the size of the chunk
-                            std::getline(ss, line);
-                            continue;
-                        }
-                        if (line.empty()) {
-                            // Empty line indicates end of chunked body
-                            break;
-                        }
-                        body += line;
-                    }
-                } else {
-                    body += line;
-                }
-                RequestFile << body;
-                cout << "body1: " << body << endl;
-                const char *endbody = strstr(buffer, "\r\n\r\n");
-                if (endbody != NULL) {
-                    state = RequestState::HEADERS;
-                }
-                // create a file for the body and handle it
-            }
-        }
-
-        // fill the map with the headers and handle the chunked body if there is some here
-        void parseHeadersRequest() {
-            // Read and store the request type
-            std::ifstream RequestFile2(filename);
-            RequestFile2.open(filename);
-            if (!RequestFile2.is_open()) {
-                std::cerr << "Error opening file for reading Request\n";
-                exit (1);
-            }
-            std::getline(RequestFile2, type);
-
-            std::string line;
-            while (std::getline(RequestFile2, line)) {
-                if (line.empty() || line == "\r") {
-                    // Empty line indicates end of headers
-                    break;
-                }
-                size_t pos = line.find(": ");
-                if (pos != std::string::npos) {
-                    std::string key = line.substr(0, pos);
-                    std::string value = line.substr(pos + 2); // Skip ": "
-                    headers[key] = value; // Store the header in the map
-                }
-            }
-            string body;
-            auto transferEncodingIterator = headers.find("Transfer-Encoding");
-            if (transferEncodingIterator != headers.end() && transferEncodingIterator->second == "chunked") {
-                // Read the chunked body
-                while (std::getline(RequestFile2, line)) {
-                    if (line == "\r") {
-                        // skip the size of the chunk
-                        std::getline(RequestFile2, line);
-                        continue;
-                    }
-                    if (line.empty()) {
-                        // Empty line indicates end of chunked body
-                        break;
-                    }
-                    body += line;
-                }
-            } else {
-                body += line;
-            }
-            // Clear the content of the hidden file for storing the body
-            RequestFile.close();
-            RequestFile.open(filename, std::ios::out | std::ios::trunc);
-            if (!RequestFile.is_open()) {
-                std::cerr << "Error opening file for appending Request2\n";
-                exit (1);
-            }
-            cout << "body2: " << body << endl;
-            RequestFile << body;
-            RequestFile2.close();
-        }
-        
-        void parseRequest() {
-            // Read and store the request type
-            std::ifstream RequestFile2(filename);
-            RequestFile2.open(filename);
-            if (!RequestFile2.is_open()) {
-                std::cerr << "Error opening file for reading Request\n";
-                exit (1);
-            }
-            std::getline(RequestFile2, type);
-
-            std::string line;
-            while (std::getline(RequestFile2, line)) {
-                if (line.empty() || line == "\r") {
-                    // Empty line indicates end of headers
-                    break;
-                }
-                size_t pos = line.find(": ");
-                if (pos != std::string::npos) {
-                    std::string key = line.substr(0, pos);
-                    std::string value = line.substr(pos + 2); // Skip ": "
-                    headers[key] = value; // Store the header in the map
-                }
-            }
-
-            // Clear the content of the hidden file for storing the body
-            std::ofstream bodyFile(".HttpBodyRequest", std::ios::trunc);
-            if (!bodyFile.is_open()) {
-                std::cerr << "Error opening file for appending Request3\n";
-                exit (1);
-            }
-            while (std::getline(RequestFile2, line)) {
-                bodyFile << line;   // Store the body in the file
-            }
-
-            bodyFile.close();
-            RequestFile2.close();
-        }
-
-        ~Request() {
-            RequestFile.close();
-        }
-};
 //////////////////////////////////////////////
 ///////////////////////////////////////
 /////////////////////////////////////////
@@ -217,7 +38,6 @@ class Client {
     char body[BUFFER_SIZE ];
     char *FullRequest;
     Client* next;
-    Request *request;
     Request2 *request2;
     int ServerSocket;
   //  Responce *responce;
@@ -252,12 +72,9 @@ class Client {
             port = ntohs(clientAddr.sin_port);
             std::cout << "Client connected from port: " << port << std::endl;
         }
-            int getSocketDescriptor() const {
+        
+        const int getSocketDescriptor() const {
             return clientSocket;
-        }
-
-        Request* setRequest() {
-            return request;
         }
 
         Request2* setRequest2() {
@@ -266,10 +83,6 @@ class Client {
 
         Request2* getRequest2() const {
             return request2;
-        }
-
-        Request* getRequest() const {
-            return request;
         }
 
         const sockaddr_in& getClientAddress() const {

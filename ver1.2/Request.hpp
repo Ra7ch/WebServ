@@ -22,7 +22,6 @@ class Request2 {
         std::string path;
         std::string version;
         std::map<std::string, std::string> headers;
-        std::string body;
         State state = REQUEST_LINE;
         bool lineComplete = true;
         bool headersComplete = false;
@@ -191,17 +190,21 @@ class Request2 {
         }
 
         void parse(int bufferlength) {
-            std::string request;
+            static std::string request;
             request.append(buffer, bufferlength);
+            if (request.find("\r\n\r\n") == std::string::npos) {
+                return;
+            }
+
             std::istringstream requestStream(request);
             std::string line;
             header_length = 0;
             if (state == REQUEST_LINE) {
-                cout << "what the fuck am i doing here" << endl;
+                //cout << "what the fuck am i doing here" << endl;
                 std::getline(requestStream, line);
                 std::istringstream lineStream(line);
                 lineStream >> method >> path >> version;
-                cout << "method = " << method << endl << "path = " << path << endl  << "version = " << version << endl;
+                //cout << "method = " << method << endl << "path = " << path << endl  << "version = " << version << endl;
                 state = HEADERS;
                 header_length = line.length() + 1;
                 chunkState = CHUNK_END;
@@ -211,6 +214,7 @@ class Request2 {
                     headersComplete = true;
                     requestPath = getPath();
                     state = BODY;
+                    request.clear();
                     break;
                 }
                 if (line.back() == '\r') {
@@ -266,6 +270,7 @@ class Request2 {
             }
 
             if (state == BODY) {
+                getchar();
                 handleBody(buffer, bufferlength, bodyStart);
             }
         }
